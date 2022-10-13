@@ -11,7 +11,7 @@ builder.Services
     .AddCore()
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    // .AddSingleton<ErrorHandler>()
+    .AddSingleton<ErrorHandler>()
     .AddControllers();
 
 var app = builder.Build();
@@ -27,7 +27,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// app.UseMiddleware<ErrorHandler>();
+app.UseMiddleware<ErrorHandler>();
 app.UseInfrastructure();
 
 app.MapControllers();
