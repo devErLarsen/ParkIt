@@ -1,0 +1,44 @@
+@page "/parking-spot/{Id}"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+@if (_parkingSpot == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
+}
+else
+{
+    <MudButton  OnClick="@(() => NavigationManager.NavigateTo("/"))">Back</MudButton>
+    <MudText Typo="Typo.h1">@_parkingSpot.CodeName</MudText>
+    <MudTable Items="@_parkingSpot.Reservations" >
+        <HeaderContent>
+            <MudTh>Start</MudTh>
+            <MudTh>End</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>NumberPlate</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Start">@context.Start</MudTd>
+            <MudTd DataLabel="End">@context.End</MudTd>
+            <MudTd DataLabel="Name">@context.Employee.Email</MudTd>
+            <MudTd DataLabel="Name">@context.Employee.Name</MudTd>
+            <MudTd DataLabel="NumberPlate">@context.Vehicle.NumberPlate</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; } = default!;
+
+    private ParkingSpotResponse? _parkingSpot;
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        var id = Guid.Parse(Id);
+        _parkingSpot = await HttpClient.GetFromJsonAsync<ParkingSpotResponse>($"spots/{id}");
+    }
+
+}

@@ -1,0 +1,67 @@
+@inject HttpClient HttpClient
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText>Reserve ParkingSpot</MudText>
+        <Vehicles @bind-Vehicle="_vehicle"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Disabled="@(_vehicle == null)" Variant="Variant.Filled" OnClick="Submit">Reserve</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public Guid ParkingSpotId { get; set; }
+    
+    [Parameter] public DateTime? Date { get; set; }
+    
+    [Parameter] public int Start { get; set; }
+    [Parameter] public int End { get; set; }
+
+    private VehicleResponse? _vehicle = default;
+    // private string _numberPlate;
+    private ReserveParkingSpotRequest _reservation = default!;
+
+    protected override Task OnParametersSetAsync()
+    {
+        _reservation = new ReserveParkingSpotRequest
+        {
+            ParkingSpotId = Guid.Empty,
+            EmployeeId = Guid.Empty,
+            From = Date!.Value.AddHours(Start), 
+            To = Date.Value.AddHours(End)
+        };
+
+        return Task.CompletedTask;
+    }
+
+    public Task SetVehicle(VehicleResponse vehicle)
+    {
+        _vehicle = vehicle;
+        return Task.CompletedTask;
+    }
+    
+    private async Task Submit()
+    {
+        var result = await HttpClient.PostAsJsonAsync($"spots/{ParkingSpotId}", _reservation with { NumberPlate = _vehicle?.NumberPlate });
+        if (result.IsSuccessStatusCode)
+        {
+            var response = await result.Content.ReadFromJsonAsync<ReservationResponse>();
+            Snackbar.Add("Reservation complete", Severity.Success);
+            if (response != null) MudDialog?.Close(DialogResult.Ok(response));
+        }
+        else
+        {
+            Snackbar.Add(await result.Content.ReadAsStringAsync(), Severity.Error);
+        }
+    }
+    
+    void Cancel() => MudDialog?.Cancel();
+}

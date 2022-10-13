@@ -1,0 +1,21 @@
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex flex-row gap-3 align-center">
+            <MudText>@context.User.Identity?.Name</MudText>
+            <MudMenu Size="Size.Large" Icon="@Icons.Material.Filled.MoreVert" IconColor="Color.Default">
+                <MudMenuItem>
+                    <MudLink Color="Color.Primary" Href="Profile">Profile</MudLink>
+                </MudMenuItem>
+                <MudMenuItem>
+                    <MudLink Color="Color.Inherit" Href="logout">Logout</MudLink>
+                </MudMenuItem>
+            </MudMenu>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="d-flex flex-row gap-6">
+            <MudLink Color="Color.Inherit" Href="register">Register</MudLink>
+            <MudLink Color="Color.Inherit" Href="login">Login</MudLink>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

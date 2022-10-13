@@ -1,0 +1,35 @@
+@page "/register"
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<MudText Typo="Typo.h3" Class="d-flex justify-center">Register</MudText>
+<EditForm Model="_registerUser" OnSubmit="RegisterUser" class="d-flex justify-center">
+    @* <DataAnnotationsValidator /> *@
+    <MudItem xs="12" sm="7">
+        <MudCard Elevation="0">
+            <MudCardContent>
+                <MudTextField Label="Email" HelperText="" @bind-Value="_registerUser.Email"/>
+                <MudTextField Label="Name" HelperText="" @bind-Value="_registerUser.Name"/>
+                <MudTextField Label="Password" HelperText="" @bind-Value="_registerUser.Password"
+                              InputType="InputType.Password"/>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</EditForm>
+
+@code {
+    private RegisterRequest _registerUser = new();
+
+
+    private async Task RegisterUser()
+    {
+        var success = await AuthService.Authenticate(_registerUser, "auth/register");
+        if (!success)
+            await JsRuntime.InvokeVoidAsync("alert", "Error!"); //alert
+        NavigationManager.NavigateTo("/");
+    }
+}

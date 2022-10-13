@@ -1,0 +1,92 @@
+@page "/profile"
+
+@using Microsoft.AspNetCore.Authorization
+@using ParkIt.Core.Enums
+
+@attribute [Authorize(Roles = "User")]
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject ISnackbar Snackbar
+
+
+<MudButton  OnClick="@(() => NavigationManager.NavigateTo("/"))">Back</MudButton>
+<MudText Typo="Typo.h4" Class="mb-5 d-flex justify-center">Employee Profile</MudText>
+@if (_employee == null)
+{
+    <MudProgressCircular Size="Size.Large" Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudPaper Class="d-flex justify-center" Elevation="0">
+        <MudList Clickable="false" Class="">
+            <MudListItem Text="@($"Name: {_employee.Name}")"/>
+            <MudListItem Text="@($"Email: {_employee.Email}")"/>
+            <MudListItem Text="Vehicles" InitiallyExpanded="true">
+                <NestedList>
+                    @foreach (var vehicle in _employee.Vehicles)
+                    {
+                        <MudItem Class="d-flex flex-row ml-3">
+                            <MudListItem Text="@string.Join(", ", vehicle.VehicleType, vehicle.NumberPlate)"/>
+                            <MudIconButton Color="Color.Error" Class="mr-1" Icon="@Icons.Material.Filled.Delete" OnClick="@(() => RemoveVehicle(vehicle))"/>
+                        </MudItem>
+                    }
+                    <EditForm Model="@_addVehicleRequest" Class="d-flex justify-center" OnSubmit="AddVehicle">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudSelect T="string" @bind-value="_addVehicleRequest.Type" Label="Vehicle Type">
+                                    <MudSelectItem T="string" Value="VehicleType.Car.ToString()"/>
+                                    <MudSelectItem T="string" Value="VehicleType.Bike.ToString()"/>
+                                </MudSelect>
+                                <MudTextField Label="NumberPlate" HelperText="" @bind-Value="_addVehicleRequest.NumberPlate" InputType="InputType.Password"/>
+                            </MudCardContent>
+                            <MudCardActions>
+                                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Add</MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </EditForm>
+                </NestedList>
+            </MudListItem>
+        </MudList>
+    </MudPaper>
+}
+@code {
+
+    private EmployeeWithVehiclesResponse? _employee;
+    private AddVehicleRequest _addVehicleRequest = new();
+    protected override async Task OnInitializedAsync()
+    {
+        _employee = await HttpClient.GetFromJsonAsync<EmployeeWithVehiclesResponse>("employees/me");
+        // await base.OnInitializedAsync();
+    }
+
+
+    private async Task RemoveVehicle(VehicleResponse vehicle)
+    {
+        var response = await HttpClient.DeleteAsync($"employees/vehicles/{vehicle.NumberPlate}");
+        if (!response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(await response.Content.ReadAsStringAsync(), Severity.Error);
+        }
+        else
+        {
+            _employee?.Vehicles.Remove(vehicle);
+            Snackbar.Add("Vehicle successfully removed!", Severity.Success);
+        }
+    }
+
+    private async Task AddVehicle()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"employees/Vehicles", _addVehicleRequest);
+        if (!response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(await response.Content.ReadAsStringAsync(), Severity.Error);
+        }
+        else
+        {
+            _employee?.Vehicles.Add(new VehicleResponse(_addVehicleRequest.NumberPlate!, _addVehicleRequest.Type!));
+            _addVehicleRequest = new AddVehicleRequest();
+            Snackbar.Add("Successfully added Vehicle!", Severity.Success);
+        }
+    }
+
+}

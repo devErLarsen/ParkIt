@@ -1,0 +1,34 @@
+<MudDatePicker PickerVariant="PickerVariant.Inline" MinDate="DateTime.Today" @bind-Date="@Date" />
+@* DateChanged="@(d => SetDate.InvokeAsync(d))"/> *@
+@* <MudTimePicker Label="From" @bind-Time="ReservationPeriodData.Start" For="@(() => ReservationPeriodData.Start)"/> *@
+@* <MudTimePicker @ref="_endTimePicker" Label="To" TimeChanged="ValidTimeChange" For="@(() => ReservationPeriodData.End)" /> *@
+@* <MudButton OnClick="ClickTest">Click Me!</MudButton> *@
+@code {
+
+    // MudDatePicker _datePicker;
+    // MudTimePicker _startTimePicker;
+    // MudTimePicker _endTimePicker;
+
+    // [CascadingParameter] public ReservationPeriodData ReservationPeriodData { get; set; }
+    [CascadingParameter] private DateTime? Date { get; set; }
+
+    [Parameter]
+    public EventCallback<DateTime?> SetDate { get; set; }
+
+    // private void ValidTimeChange(TimeSpan? time)
+    // {
+    //     if (time > ReservationPeriodData.Start)
+    //         ReservationPeriodData.End = time;
+    //     else
+    //         _endTimePicker.Reset();
+    // }
+
+    // private void ClickTest()
+    // {
+    //     Console.WriteLine(ReservationPeriodData.Start);
+    //     Console.WriteLine(ReservationPeriodData.End);
+    //     _endTimePicker.Reset();
+    //     _endTimePicker.Clear();
+    //     StateHasChanged();
+    // }
+}

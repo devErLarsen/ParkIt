@@ -1,0 +1,29 @@
+<MudPaper Elevation="0" Height="200px" Class="d-flex flex-column align-content-space-between gap-5">
+    <MudNumericField T="int" Label="Start time" Value="Start" ValueChanged="OnStartChanged" Min="7" Max="End" Step="1"/>
+    <MudNumericField T="int" Label="End time" Value="End" ValueChanged="OnEndChanged" Min="Start" Max="18" Step="1"/>
+    @* <MudTextField T="DateTime" InputType="InputType.Time" /> *@
+</MudPaper>
+@code {
+
+    [Parameter]
+    public int Start { get; set; }
+    [Parameter]
+    public EventCallback<int> StartChanged { get; set; }
+
+    [Parameter]
+    public int End { get; set; } 
+    [Parameter]
+    public EventCallback<int> EndChanged { get; set; }
+
+    private Task OnStartChanged(int start)
+    {
+        Start = start;
+        return StartChanged.InvokeAsync(start);
+    }
+    
+    private Task OnEndChanged(int end)
+    {
+        End = end;
+        return EndChanged.InvokeAsync(end);
+    }
+}

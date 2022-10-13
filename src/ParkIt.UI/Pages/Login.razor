@@ -1,0 +1,35 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h3" Class="d-flex justify-center">Login</MudText>
+<EditForm Model="_loginUser" Class="d-flex justify-center" OnSubmit="LoginUser">
+    @* <DataAnnotationsValidator /> *@
+    <MudItem xs="12" sm="7" >
+        <MudCard Elevation="0">
+            <MudCardContent>
+                <MudTextField Label="Email" HelperText="" @bind-Value="_loginUser.Email"/>
+                <MudTextField Label="Password" HelperText="" @bind-Value="_loginUser.Password" InputType="InputType.Password"/>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</EditForm>
+
+@code {
+    private LoginRequest _loginUser = new();
+
+
+    private async Task LoginUser()
+    {
+        var success = await AuthService.Authenticate(_loginUser, "auth/login");
+        if(!success)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Error!");
+        }
+        NavigationManager.NavigateTo("/");
+    }
+}

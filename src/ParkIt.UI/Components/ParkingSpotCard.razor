@@ -1,0 +1,169 @@
+@using ParkIt.Core.Enums
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="2" Square="false" Style="@SetColorIndicator()">
+    <MudCardContent Style="width: 200px" Class="d-flex flex-column justify-center">
+        <MudItem Class="d-inline-flex justify-start">
+            <MudIcon Size="Size.Large" Icon="@(SetSpotTypeIcon(Spot!.Type))"/>
+        </MudItem>
+        <MudButton Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo($"parking-spot/{Spot?.Id}"))" Variant="Variant.Text">
+            <MudText Typo="Typo.h3">@Spot?.CodeName</MudText>
+        </MudButton>
+        @if (CurrentDateReservation != null)
+        {
+            <MudCarousel Style="height: 40px" ItemsSource="@CurrentDateReservation" @bind-SelectedIndex="@_carouselIndex" EnableSwipeGesture="false" ShowBullets="false" ShowArrows="false" AutoCycle="true" >
+                <ItemTemplate>
+                    <div class="d-flex flex-column justify-center" style="height:100%">
+                        <MudText Align="@Align.Center" Typo="@Typo.body1">@context.Employee.Name</MudText>
+                        <MudText Align="@Align.Center" Typo="@Typo.body1">@context.Start.TimeOfDay.Hours - @context.End.TimeOfDay.Hours</MudText>
+                    </div>
+                </ItemTemplate>
+                @* <MudCarouselItem Transition="Transition.Slide" Color="@Color.Inherit"> *@
+                @*     <div class="d-flex" style="height:100%"> *@
+                @*     </div> *@
+                @* </MudCarouselItem> *@
+                @* @foreach (var res in CurrentDateReservation) *@
+                @* { *@
+                @* <MudText Align="@Align.Center" Typo="@Typo.body1">@res.Employee.Name</MudText> *@
+                @* <MudText Align="@Align.Center" Typo="@Typo.body1">@res.Start -> @res.End</MudText> *@
+                @* } *@
+            </MudCarousel>
+        }
+    </MudCardContent>
+    <AuthorizeView Roles="User">
+        <MudCardActions Class="justify-center">
+            @if (CurrentDateReservation != null)
+            {
+                // no reservations => show reserve button
+                // 1 reservation, and it's a bike => show both reserve and unreserve button.
+                // 1 reservation, and it's a car => only show unreserve button.
+                // 2 reservations, and both are bikes (only scenario allowed) => show only unreserve button. (button specific user).
+                if (CurrentDateReservation.Any())
+                {
+                    foreach (var res in CurrentDateReservation)
+                    {
+                        if (res.Employee.Email == context.User.Identity?.Name)
+                        {
+                            <MudButton OnClick="() => DeleteReservation(res)" Variant="Variant.Text">
+                                <MudText Typo="Typo.button">Unreserve</MudText>
+                            </MudButton>
+                        }
+                    }
+
+                    if (CurrentDateReservation.Count() == 1 && Spot?.Type == "BikeSpot")
+                    {
+                        <MudButton OnClick="OpenReserveDialog" Variant="Variant.Text">
+                            <MudText Typo="Typo.button">Reserve</MudText>
+                        </MudButton>
+                    }
+                }
+                else
+                {
+                    <MudButton OnClick="OpenReserveDialog" Variant="Variant.Text">
+                        <MudText Typo="Typo.button">Reserve</MudText>
+                    </MudButton>
+                }
+            }
+        </MudCardActions>
+    </AuthorizeView>
+</MudCard>
+@code {
+    [Parameter] public ParkingSpotResponse? Spot { get; set; }
+    
+    [Parameter] public DateTime? Date { get; set; }
+    
+    [Parameter]
+    public int Start { get; set; }
+    [Parameter]
+    public int End { get; set; }
+
+    private int _carouselIndex = 0;
+    
+    // private ReservationResponse? CurrentDateReservation
+    //     // => Spot?.Reservations.FirstOrDefault(d => d.Start.Date == Date!.Value.Date); // IsReservedForReservationPeriod(d.Start, d.End));
+    //     => Spot?.Reservations.FirstOrDefault(dt => Date?.Date.AddHours(Start) < dt.End && dt.Start < Date?.Date.AddHours(End));
+
+    private IEnumerable<ReservationResponse>? CurrentDateReservation
+        => Spot?.Reservations.Where(dt => Date?.Date.AddHours(Start) < dt.End && dt.Start < Date?.Date.AddHours(End));
+
+    private bool IsReservedNow
+        => CurrentDateReservation != null && CurrentDateReservation.Any();
+    
+    // private string SetColorIndicator()
+    //     => IsReservedNow ? "background-color:red" : "background-color:green";
+    private string SetColorIndicator()
+    {
+        if (CurrentDateReservation != null)
+        {
+            if (!CurrentDateReservation.Any())
+                return "background-color: green";
+            if (CurrentDateReservation.First().Vehicle.VehicleType == "Car" || CurrentDateReservation.Count() == 2)
+                return "Background-color: red";
+            if (CurrentDateReservation.First().Vehicle.VehicleType == "Bike")
+                return "background: linear-gradient(to left, green 50%, red 50%)";
+        }
+        
+        return "background-color: green";
+    }
+
+    private string SetSpotTypeIcon(string type)
+        => type switch
+        {
+            "CarSpot" => Icons.Filled.DirectionsCar,
+            "BikeSpot" => Icons.Filled.TwoWheeler,
+            "HandicapSpot" => Icons.Filled.Accessible,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+            
+    private async Task OpenReserveDialog()
+    {
+        Guid.TryParse(Spot?.Id, out var id);
+        var parameters = new DialogParameters()
+        {
+            { "ParkingSpotId", id },
+            { "Date", Date },
+            { "Start", Start },
+            { "End", End }
+        };
+
+        var dialog = DialogService.Show<ReservationDialog>("Reserve", parameters);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            Spot?.Reservations.Add((ReservationResponse) result.Data);
+            _carouselIndex = CurrentDateReservation!.Count() -1;
+        }
+    }
+
+    private async Task DeleteReservation(ReservationResponse reservation)
+    {
+        var response = await HttpClient.DeleteAsync($"spots/{Spot?.Id}/reservation/{reservation.Id}");
+        if(!response.IsSuccessStatusCode)
+            Snackbar.Add(await response.Content.ReadAsStringAsync(), Severity.Error);
+        else
+        {
+            if (CurrentDateReservation != null) Spot?.Reservations.Remove(reservation);
+            Snackbar.Add("Your reservation was removed successfully!", Severity.Success);
+        }
+    }
+
+    // protected override Task OnParametersSetAsync()
+    // {
+    //     Console.WriteLine("HEI");
+    //     // _currentlyReserved = IsReservedNow();
+    //     return Task.CompletedTask;
+    // }
+
+    // private bool IsReservedForReservationPeriod(DateTime d1, DateTime d2)
+    // {
+    //     if (ReservationPeriodData is not {Date: { },Start: { }, End: { }}) return false;
+    //     var start = ReservationPeriodData.Date.Value.Add(ReservationPeriodData.Start.Value);
+    //     var end = ReservationPeriodData.Date.Value.Add(ReservationPeriodData.End.Value);
+    //
+    //     return start <= d2 && end >= d1;
+    // }
+
+}

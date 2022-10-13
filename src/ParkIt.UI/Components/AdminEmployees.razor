@@ -1,0 +1,55 @@
+@using System.ComponentModel.Design.Serialization
+@using System.Diagnostics
+@inject HttpClient HttpClient
+@inject ISnackbar Snackbar
+
+<MudItem Class="d-flex flex-column justify-center gap-6 mud-width-full">
+    <MudText Typo="Typo.h3" Class="">Employees</MudText>
+    @if (_employees == null)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
+    }
+    else
+    {
+        <MudTable Items="@_employees" Class="">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Handicap</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Name</MudTd>
+                <MudTd DataLabel="Code">@context.Email</MudTd>
+                <MudTd DataLabel="Handicap">
+                    <MudToggleIconButton Toggled="@(context.HasHandicapPrivileges)" ToggledChanged="@(() => SetHandicapPrivilege(context))"
+                                         Icon="@Icons.Filled.NotAccessible" Color="Color.Error" Title="false"
+                                         ToggledIcon="@Icons.Filled.Accessible" ToggledColor="@Color.Success" ToggledTitle="true"/>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudItem>
+@code {
+    
+    private List<EmployeeResponse>? _employees;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _employees = (await HttpClient.GetFromJsonAsync<IEnumerable<EmployeeResponse>>("employees"))!.ToList();
+    }
+
+    private async Task SetHandicapPrivilege(EmployeeResponse employee)
+    {
+        
+        var response = await HttpClient.PostAsync($"employees/handicap/{employee.Id}", null);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<bool>();
+            employee.HasHandicapPrivileges = result;
+        }
+        else
+        {
+            Snackbar.Add("error while updating handicap status", Severity.Error);
+        }
+    }
+}

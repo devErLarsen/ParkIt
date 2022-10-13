@@ -1,0 +1,116 @@
+@inject HttpClient HttpClient
+@inject ISnackbar Snackbar
+
+<MudItem Class="d-flex flex-column justify-center gap-6 mud-width-full">
+    <MudText Typo="Typo.h3" Class="">Parking spots</MudText>
+
+    @if (_parkingSpots == null)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true"/>
+    }
+    else
+    {
+        <MudTable MultiSelection="true" @bind-SelectedItems="_selectedParkingSpots" Items="@_parkingSpots" >
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>Type</MudTh>
+                <MudTh>Code</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Type">@context.Type</MudTd>
+                <MudTd DataLabel="Code">@context.CodeName</MudTd>
+            </RowTemplate>
+        </MudTable>
+        <MudPaper Elevation="0" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="Delete" Disabled="@(!_selectedParkingSpots.Any())" >Delete (@_selectedParkingSpots.Count)</MudButton>
+        </MudPaper>
+        <MudDivider DividerType="DividerType.FullWidth"/>
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="Add Parking spots">
+                <EditForm Model="@_createSpot" OnValidSubmit="Create">
+                    <DataAnnotationsValidator/> 
+                    <MudSelect T="string" @bind-value="@_createSpot.Type">
+                        <MudSelectItem Value="@("CarSpot")">CarSpot</MudSelectItem>
+                        <MudSelectItem Value="@("BikeSpot")">BikeSpot</MudSelectItem>
+                        <MudSelectItem Value="@("HandicapSpot")">HandicapSpot</MudSelectItem>
+                    </MudSelect>
+                    <MudSelect @bind-Value="_createSpot.Prefix" T="char" Label="Prefix">
+                        @foreach (var letter in Enumerable.Range('A', 26).Select(x => (char)x))
+                        {
+                            <MudSelectItem T="char" Value="@letter"/>
+                        }
+                    </MudSelect>
+                    <MudNumericField Label="Start index" T="int" @bind-Value="_createSpot.Start" Min="1" For="@(() => _createSpot.Start)"/>
+                    <MudNumericField Label="Amount" T="int" @bind-Value="_createSpot.Count" Min="1" Max="999" For="@(() => _createSpot.Count)"/>
+                    <MudPaper Elevation="0" Class="d-flex justify-end mt-5">
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="d-flex ">Add</MudButton>
+                    </MudPaper>
+                </EditForm>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+</MudItem>
+
+@code {
+    
+    private List<ParkingSpotResponse>? _parkingSpots;
+    private HashSet<ParkingSpotResponse> _selectedParkingSpots = new();
+
+    private CreateSpot _createSpot = new();
+    // private char _prefix;
+    // private int _startNumber;
+    // private int _number;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _parkingSpots = (await HttpClient.GetFromJsonAsync<IEnumerable<ParkingSpotResponse>>("spots"))!.ToList();
+    }
+
+    private async Task Create()
+    {
+        var spotList = Enumerable
+            .Range(_createSpot.Start, _createSpot.Count)
+            .Select(n => new CreateParkingSpotRequest(_createSpot.Type, string.Join("", _createSpot.Prefix, n)));
+        var response = await HttpClient.PostAsJsonAsync("spots/bulk", spotList);
+        if (!response.IsSuccessStatusCode)
+            Snackbar.Add(await response.Content.ReadAsStringAsync(), Severity.Error);
+        else
+        {
+            var spotsToAdd = await response.Content.ReadFromJsonAsync<IEnumerable<ParkingSpotResponse>>();
+            if (spotsToAdd != null) 
+                _parkingSpots?.AddRange(spotsToAdd);
+
+            Snackbar.Add("Successfully added Parking spot(s)!", Severity.Success);
+        }
+    }
+
+    private async Task Delete()
+    {
+        var onlyIds = _selectedParkingSpots.Select(x => x.Id);
+        var request = new HttpRequestMessage
+        {
+            Method = HttpMethod.Delete,
+            RequestUri = new Uri(HttpClient.BaseAddress + "spots"),
+            Content = JsonContent.Create(onlyIds)
+        };
+        var response = await HttpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            Snackbar.Add(await response.Content.ReadAsStringAsync(), Severity.Error);
+        else
+        {
+            _parkingSpots?.RemoveAll(p => _selectedParkingSpots.Contains(p));
+            Snackbar.Add("Successfully deleted selected parking spots!", Severity.Success);
+            _selectedParkingSpots.Clear();
+            _createSpot = new CreateSpot();
+        }
+    }
+
+    record CreateSpot
+    {
+        public string Type { get; set; } = "CarSpot";
+        public char Prefix { get; set; }
+        public int Start { get; set; } = 1;
+        public int Count { get; set; } = 1;
+    }
+}

@@ -1,0 +1,44 @@
+@inject HttpClient HttpClient
+
+@if (VehicleList == null)
+{
+    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" />
+}
+else if (VehicleList.Count == 0)
+{
+    <MudText Typo="Typo.body1" Color="Color.Error">
+        Adding a Vehicle is required.
+        <MudLink Href="profile">Add</MudLink>
+    </MudText>
+}
+else
+{
+    <MudSelect Label="Pick Vehicle" Value="Vehicle" ValueChanged="OnVehicleChanged" T="VehicleResponse">
+        @foreach (var v in VehicleList)
+        {
+            <MudSelectItem T="VehicleResponse" Value="@v">@v.VehicleType, @v.NumberPlate</MudSelectItem> 
+        }
+    </MudSelect>
+}
+
+@code {
+    
+    private List<VehicleResponse>? VehicleList { get; set; }
+    
+    [Parameter]
+    public EventCallback<VehicleResponse> VehicleChanged { get; set; }
+    
+    [Parameter]
+    public VehicleResponse? Vehicle { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        VehicleList = await HttpClient.GetFromJsonAsync<List<VehicleResponse>>("employees/vehicles");
+    }
+
+    private Task OnVehicleChanged(VehicleResponse vehicle)
+    {
+        Vehicle = vehicle;
+        return VehicleChanged.InvokeAsync(Vehicle);
+    }
+}

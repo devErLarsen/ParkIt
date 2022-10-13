@@ -1,0 +1,9 @@
+﻿<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.LocalParking">Reserve Parking</MudNavLink>
+    <AuthorizeView Roles="Admin">
+        <MudNavLink Href="secret" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Api">Secret</MudNavLink>
+        <MudNavLink Href="admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings">Admin</MudNavLink>
+    </AuthorizeView>
+    @* <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink> *@
+    @* <MudNavLink Href="fetchdata" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Fetch data</MudNavLink> *@
+</MudNavMenu>

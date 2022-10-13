@@ -1,0 +1,45 @@
+﻿@page "/"
+@inject HttpClient Client
+
+<PageTitle>ParkIt</PageTitle>
+
+@if (Spots == null)
+{
+    <MudPaper Elevation="0" Width="100%" Class="d-flex justify-center">
+        <MudProgressCircular Size="Size.Large" Color="Color.Primary" Indeterminate="true" />
+    </MudPaper>
+}
+else
+{
+    <MudPaper Class="d-flex flex-row justify-center align-center gap-5 mb-5" Elevation="0">
+        @* Orientation="Orientation.Landscape" *@
+        <MudDatePicker Elevation="0"
+                       Orientation="Orientation.Landscape"
+                       Rounded="true" PickerVariant="PickerVariant.Static"
+                       MinDate="DateTime.Today" @bind-Date="@_date"
+                       IsDateDisabledFunc="time => time.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday"
+                       Class=""/>
+        <TimeRangePicker @bind-Start="_start" @bind-End="_end"/>
+    </MudPaper>
+    <MudPaper Class="d-flex flex-wrap justify-center gap-5 pa-5" Elevation="0">
+        @foreach (var spot in Spots)
+        {
+            <ParkingSpotCard Spot="@spot" Date="@_date" Start="_start" End="_end"/>
+        }
+    </MudPaper>
+    @* <MudButton OnClick="() => Console.WriteLine(Date)">Click</MudButton> *@
+}
+
+@code
+{
+    private IEnumerable<ParkingSpotResponse>? Spots { get; set; }
+
+    private DateTime? _date = DateTime.Today;
+    private int _start = 7;
+    private int _end = 18;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Spots = await Client.GetFromJsonAsync<IEnumerable<ParkingSpotResponse>>("spots");
+    }
+}

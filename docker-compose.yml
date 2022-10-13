@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    image: "mcr.microsoft.com/mssql/server"
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "Password123!"
+      ACCEPT_EULA: "Y"
+
+# version: '3'
+
+# services:
+#   postgres:
+#     image: postgres
+#     shm_size: '4gb'
+#     container_name: postgres
+#     restart: unless-stopped
+#     environment:
+#       - POSTGRES_HOST_AUTH_METHOD=trust
+#     ports:
+#       - 5432:5432
+#     volumes:
+#       - postgres:/var/lib/postgresql/data
+
+# volumes:
+#   postgres:
+#     driver: local
