@@ -18,11 +18,16 @@ public class ParkingSpotTests
 
         var employee1 = new Employee(Guid.NewGuid(), "Test User 1", "test1@testing.com", DateTime.Now);
         var employee2 = new Employee(Guid.NewGuid(), "Test User 2", "test2@testing.com", DateTime.Now);
+
+        var np1 = new NumberPlate("ZXY123");
+        var np2 = new NumberPlate("ZXY321");
+        employee1.AddVehicle(np1, VehicleType.Car);
+        employee2.AddVehicle(np2, VehicleType.Car);
         
         var spot = new CarSpot(Guid.NewGuid(), "A1");
 
-        Reservation reservation1 = new(Guid.NewGuid(), employee1, new NumberPlate("ZXY123"), new ReservationPeriod(today.AddHours(8), today.AddHours(12)));
-        Reservation reservation2 = new(Guid.NewGuid(), employee2,  new NumberPlate("ZXY321"), new ReservationPeriod(today.AddHours(10), today.AddHours(13)));
+        Reservation reservation1 = new(Guid.NewGuid(), employee1, np1, new ReservationPeriod(today.AddHours(8), today.AddHours(12)));
+        Reservation reservation2 = new(Guid.NewGuid(), employee2,  np2, new ReservationPeriod(today.AddHours(10), today.AddHours(13)));
 
         spot.ReserveParkingSpot(reservation1);
 
